@@ -1,28 +1,28 @@
 import * as vscode from 'vscode';
 import { env } from 'process';
-import {existsSync, copyFile} from 'fs';
-import * as os from 'os';
+import { existsSync } from 'fs';
+import { platform } from 'os';
 
 export function activate(context: vscode.ExtensionContext) {
 
 	let disposablePrint = vscode.commands.registerCommand('quickprint.print', () => {
-		GetLanguagePackFilepath().then( SettingsFilepath => {
-			import(SettingsFilepath).then((LanguageSettings) => {
-				main(LanguageSettings);
+		GetLanguageSettingsFilepath().then( SettingsFilepath => {
+			import(SettingsFilepath).then( LanguageSettings => {
+				QuickPrint(LanguageSettings);
 			});
 		});
 	});
 	
 	let disposablePrintSpecial = vscode.commands.registerCommand('quickprint.printAlternative', () => {
-		GetLanguagePackFilepath().then( SettingsFilepath => {
-			import(SettingsFilepath).then((LanguageSettings) => {
-				main(LanguageSettings, true);
+		GetLanguageSettingsFilepath().then( SettingsFilepath => {
+			import(SettingsFilepath).then( LanguageSettings => {
+				QuickPrint(LanguageSettings, true);
 			});
 		});
 	});
 
 	let disposableEditLang = vscode.commands.registerCommand('quickprint.editLanguages', () => {
-		GetLanguagePackFilepath().then( SettingsFilepath => {
+		GetLanguageSettingsFilepath().then( SettingsFilepath => {
 			vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
 				vscode.window.showTextDocument(doc);
 			});
@@ -36,46 +36,38 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-async function GetLanguagePackFilepath()
+/**
+ * Get the filepath to the language settings file that's stored under AppData
+ */
+async function GetLanguageSettingsFilepath()
 {
 	// Get the path to the settings file
 	const settingsFilename = "quickprint_languages.json";
 	var settingsFilepath:string;
-	if (os.platform() == "win32")
+	if (platform() == "win32")
 		settingsFilepath = env.APPDATA + '/Code/User/' + settingsFilename;
-	else if (os.platform() == "darwin")
+	else if (platform() == "darwin")
 		settingsFilepath = env.HOME + "/Library/Application Support/Code/User/" + settingsFilename;
 	else
 		settingsFilepath = env.HOME + "/.config/Code/User/" + settingsFilename;
 		
 		
-	// Ensure the filepath exists, if not create it with the default language pack as default
+	// Ensure the file exists
 	if (!existsSync(settingsFilepath)) {
+		// If the file does not exist, create the file using languages.json as a template.
 		const templateFilepath = __dirname + "/languages.json";
 		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
 		if (!existsSync(settingsFilepath)) {
 			return templateFilepath;
 		}
-		
 	}
 
 	return settingsFilepath;
 }
 
-
-// Get the selected text in the editor
-function GetSelectedText() : string
-{
-	const editor = vscode.window.activeTextEditor;
-	if (!editor)
-		return  "";
-
-	return editor.document.getText(editor.selection);
-}
-
-
-
-// Get the raw trimmed code line without any comments, e.g. "def MyFun(): #HELLO" would return "def MyFun():"
+/**
+ * Get the raw trimmed code line without any comments, e.g. "def MyFun(): #HELLO" would return "def MyFun():"
+ */
 function GetLineWithoutComments(line:string, commentChar:string) : string
 {
 	if (line.includes(commentChar))
@@ -83,16 +75,18 @@ function GetLineWithoutComments(line:string, commentChar:string) : string
 	return line.trim();
 }
 
-
-function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePrint:boolean)
+/**
+ * Adds a print statement on the next line in the text editor
+ */
+function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePrint:boolean, bUsingClipboardText:boolean)
 {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor)
 		return  "";
-
+	
 	textToPrint = textToPrint.trim();
 
-
+	// Load language pack variables
 	const commentChar:string = languagePack["commentChar"];
 	const increaseIndentChar:string = languagePack["increaseIndentChar"];
 	var printFunction:string = "";
@@ -105,61 +99,73 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 		printFunction = languagePack["function"];
 	}
 
-	const lineNumber = editor.selection.end.line;
-
-	const activeLine = editor.document.lineAt(lineNumber);
-	var activeLineText = activeLine.text;
-
-	// Find out which line to add the print statement too
-	
-	var lineToInsertPrint = lineNumber;
-	for (var i = lineNumber + 1; i < editor.document.lineCount; i++) {
-		var lineText = editor.document.lineAt(i).text;
-		const lineTextWithoutComment = GetLineWithoutComments(lineText, commentChar);
-		if (lineTextWithoutComment == increaseIndentChar)
-		{
-			lineToInsertPrint ++;
-			activeLineText = lineText;
-		}
-			
-		break;
-	}
-
-	// Get the text as a safe string to print
+	// Remove any quotation marks from the string that'll replace $(TEXT)
 	var safeString = textToPrint.replace(/\"/g, "");
 	safeString = safeString.replace(/'/g, "");
 
-	
+	// Format the print function
 	printFunction = printFunction.replace("$(TEXT)", safeString);
 	printFunction = printFunction.replace("$(VAR)", textToPrint);
-	
-	var indentation = activeLineText.length - activeLineText.trimLeft().length;
 
-	var newIndentantions = "";
-	var numberOfSpaces = 0;
-	var lineWithoutComment = GetLineWithoutComments(activeLineText, commentChar);
-	const lastChar = lineWithoutComment.trim().substr(lineWithoutComment.length - 1);
-	if (lastChar == increaseIndentChar)
+	const selectedLineNumber = editor.selection.end.line;
+	const activeLine = editor.document.lineAt(selectedLineNumber);
+	var activeLineText = activeLine.text;
+	var lineToInsertPrint = selectedLineNumber;
+
+	// If we're using text selection, correct indentation & line number needs to be figured out
+	// Otherwise if the text comes from the clipboard, just insert the print statement at the line where the cursor is.
+	if (!bUsingClipboardText)
 	{
-		//vscode.window.showInformationMessage("Increase indent");
-		// Increase the indentation
-		editor.options.insertSpaces;
-		var tabSize = editor.options.tabSize;
-		if (tabSize != "audo" || !tabSize)
+		if (selectedLineNumber + 1 < editor.document.lineCount)
 		{
-			newIndentantions = " ".repeat((tabSize as number))
+			// If the line after the selected line is only e.g. an { placed after a function, skip to the next line
+			var lineText = editor.document.lineAt(selectedLineNumber + 1).text;
+			const lineTextWithoutComment = GetLineWithoutComments(lineText, commentChar);
+			if (lineTextWithoutComment == increaseIndentChar)
+			{
+				lineToInsertPrint++;
+				activeLineText = lineText;
+			}
 		}
-	}
+		
+		// Figure out the correct indentation
+		var currentIndentation = activeLineText.length - activeLineText.trimLeft().length;
 
-	
-	if (activeLineText.trim())
-	{
-		printFunction = newIndentantions + activeLineText.substring(0, indentation) + printFunction;
-		printFunction = "\n" + printFunction;
-	}
-	else
-	{
-		printFunction = newIndentantions + printFunction;
+		// If the last character is a e.g. {, increase the indentation step by one.
+		var lineWithoutComment = GetLineWithoutComments(activeLineText, commentChar);
+		const lastChar = lineWithoutComment.trim().substr(lineWithoutComment.length - 1);
+		if (lastChar == increaseIndentChar)
+		{
+			// Check if document uses spaces or tabs as indentation
+			var bUseTabs = false;
+			if (!editor.options.insertSpaces)
+			{
+				if (currentIndentation)
+					bUseTabs = activeLineText.substring(0, currentIndentation).includes("\t");
+				else
+					bUseTabs = editor.document.getText().includes("\t");
+			}
+
+			// Figure out how many spaces (or if using tabs) to be added
+			var extraIndentantions = "    ";
+			if (bUseTabs)
+			{
+				extraIndentantions = "\t";
+			}
+			else
+			{
+				var tabSize = editor.options.tabSize;
+				if (tabSize != "auto" || !tabSize)
+				{
+					extraIndentantions = " ".repeat((tabSize as number));
+				}
+			}
+
+			printFunction = extraIndentantions + printFunction;
+		}
+
+		// Add a new line character + the current indentation to the print function
+		printFunction = "\n" + activeLineText.substring(0, currentIndentation) + printFunction;
 	}
 	
 	// Insert the print function into the text document
@@ -169,15 +175,16 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 
 }
 
-
-function main(LanguageSettings:any, bAlternativePrint:boolean = false)
+/**
+ * Main function to be called upon when a command runs and a print statement is supposed to be added.
+ */
+function QuickPrint(LanguageSettings:any, bAlternativePrint:boolean = false)
 {
-	// Check if the language is supported
-	const editor = vscode.window.activeTextEditor;5
+	const editor = vscode.window.activeTextEditor;
 	if(!editor)
 		return;
 
-	
+	// Check if the language is supported
 	const languageId = editor.document.languageId;
 	if (!LanguageSettings.hasOwnProperty(languageId))
 	{
@@ -187,19 +194,19 @@ function main(LanguageSettings:any, bAlternativePrint:boolean = false)
 
 	const languagePack = LanguageSettings[languageId];
 
-	// Use selection
-	var selectedText = GetSelectedText();
+	// Get selected text and try to use that
+	var selectedText = editor.document.getText(editor.selection);
 	if (selectedText)
 	{
-		AddPrintStatement(languagePack, selectedText, bAlternativePrint);
+		AddPrintStatement(languagePack, selectedText, bAlternativePrint, false);
 		return;
 	}
 
-	// No text was selected try to get the copied text instead
-	vscode.env.clipboard.readText().then((copiedText)=>{
+	// If no text was selected try to get the copied text from the clipboard instead
+	vscode.env.clipboard.readText().then( copiedText => {
 		if (copiedText)
 		{
-			AddPrintStatement(languagePack, copiedText, bAlternativePrint);
+			AddPrintStatement(languagePack, copiedText, bAlternativePrint, true);
 		}
 	});
 }
