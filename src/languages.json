@@ -1,0 +1,30 @@
+{
+    "java" : {
+        "function" : "System.out.println(\"$(TEXT): \" + $(VAR));",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    },
+    "javascript" : {
+        "function" : "console.log(\"$(TEXT): \" + $(VAR));",
+        "alternativeFunction" : "alert(\"$(TEXT): \" + $(VAR));",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    },
+    "php" : {
+        "function" : "print_r(\"$(TEXT): \" . $(VAR));",
+        "alternativeFunction" : "var_dump($(VAR));",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    },
+    "python" : {
+        "function" : "print(\"$(TEXT): %s\" %($(VAR)))",
+        "alternativeFunction" : "pprint($(VAR))",
+        "increaseIndentChar": ":",
+        "commentChar": "#"
+    },
+    "typescript" : {
+        "function" : "console.log(\"$(TEXT): \" + $(VAR));",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    }
+}

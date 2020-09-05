@@ -1,0 +1,79 @@
+{
+	"name": "quickprint",
+	"displayName": "QuickPrint",
+	"description": "Shorcut for adding print statements to your code.",
+	"version": "0.1.0",
+	"publisher": "NilsSoderman",
+	"qna":"marketplace",
+	"author": {
+		"name": "Nils Soderman"
+	},
+	"engines": {
+		"vscode": "^1.48.0"
+	},
+	"keywords":[
+		"print",
+		"debug",
+		"console",
+		"log",
+		"hotkey"
+	],
+	"categories": [
+		"Programming Languages",
+		"Keymaps",
+		"Debuggers",
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:quickprint.print"
+	],
+	"main": "./out/quickprint.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "quickprint.print",
+				"title": "Quick Print"
+			},
+			{
+				"command": "quickprint.printAlternative",
+				"title": "Quick Print Alternative"
+			},
+			{
+				"command": "quickprint.editLanguages",
+				"title": "QuickPrint Edit Languages"
+			}
+			
+		],
+		"keybindings": [
+            {
+                "command": "quickprint.print",
+                "key": "f4"
+			},
+			{
+                "command": "quickprint.printAlternative",
+                "key": "shift+f4"
+            }
+        ]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint src --ext ts",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^7.0.1",
+		"@types/node": "^12.11.7",
+		"@types/vscode": "^1.48.0",
+		"eslint": "^6.8.0",
+		"@typescript-eslint/parser": "^2.18.0",
+		"@typescript-eslint/eslint-plugin": "^2.18.0",
+		"glob": "^7.1.6",
+		"mocha": "^7.0.1",
+		"typescript": "^3.7.5",
+		"vscode-test": "^1.3.0"
+	}
+}
