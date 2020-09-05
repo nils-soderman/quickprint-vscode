@@ -26,7 +26,9 @@
 		"Other" 
 	],
 	"activationEvents": [
-		"onCommand:quickprint.print"
+		"onCommand:quickprint.print",
+		"onCommand:quickprint.printAlternative",
+		"onCommand:quickprint.editLanguages"
 	],
 	"main": "./out/quickprint.js",
 	"contributes": {

@@ -1,25 +1,66 @@
 import * as vscode from 'vscode';
-import * as data from "./languages.json";
+import { env } from 'process';
+import {existsSync, copyFile} from 'fs';
+import * as os from 'os';
 
 export function activate(context: vscode.ExtensionContext) {
 
 	let disposablePrint = vscode.commands.registerCommand('quickprint.print', () => {
-		main();
+		GetLanguagePackFilepath().then( SettingsFilepath => {
+			import(SettingsFilepath).then((LanguageSettings) => {
+				main(LanguageSettings);
+			});
+		});
 	});
-
+	
 	let disposablePrintSpecial = vscode.commands.registerCommand('quickprint.printAlternative', () => {
-		main(true);
+		GetLanguagePackFilepath().then( SettingsFilepath => {
+			import(SettingsFilepath).then((LanguageSettings) => {
+				main(LanguageSettings, true);
+			});
+		});
 	});
 
 	let disposableEditLang = vscode.commands.registerCommand('quickprint.editLanguages', () => {
-		vscode.workspace.openTextDocument("./languages.json");
+		GetLanguagePackFilepath().then( SettingsFilepath => {
+			vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
+				vscode.window.showTextDocument(doc);
+			});
+		});
 	});
 
 	context.subscriptions.push(disposablePrint);
 	context.subscriptions.push(disposablePrintSpecial);
+	context.subscriptions.push(disposableEditLang);
 }
 
 export function deactivate() {}
+
+async function GetLanguagePackFilepath()
+{
+	// Get the path to the settings file
+	const settingsFilename = "quickprint_languages.json";
+	var settingsFilepath:string;
+	if (os.platform() == "win32")
+		settingsFilepath = env.APPDATA + '/Code/User/' + settingsFilename;
+	else if (os.platform() == "darwin")
+		settingsFilepath = env.HOME + "/Library/Application Support/Code/User/" + settingsFilename;
+	else
+		settingsFilepath = env.HOME + "/.config/Code/User/" + settingsFilename;
+		
+		
+	// Ensure the filepath exists, if not create it with the default language pack as default
+	if (!existsSync(settingsFilepath)) {
+		const templateFilepath = __dirname + "/languages.json";
+		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
+		if (!existsSync(settingsFilepath)) {
+			return templateFilepath;
+		}
+		
+	}
+
+	return settingsFilepath;
+}
 
 
 // Get the selected text in the editor
@@ -32,6 +73,8 @@ function GetSelectedText() : string
 	return editor.document.getText(editor.selection);
 }
 
+
+
 // Get the raw trimmed code line without any comments, e.g. "def MyFun(): #HELLO" would return "def MyFun():"
 function GetLineWithoutComments(line:string, commentChar:string) : string
 {
@@ -41,7 +84,7 @@ function GetLineWithoutComments(line:string, commentChar:string) : string
 }
 
 
-function AddPrintStatement(textToPrint:string, languageId:string, bAlternativePrint:boolean)
+function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePrint:boolean)
 {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor)
@@ -50,16 +93,16 @@ function AddPrintStatement(textToPrint:string, languageId:string, bAlternativePr
 	textToPrint = textToPrint.trim();
 
 
-	const commentChar:string = (data as any)[languageId]["commentChar"];
-	const increaseIndentChar:string = (data as any)[languageId]["increaseIndentChar"];
+	const commentChar:string = languagePack["commentChar"];
+	const increaseIndentChar:string = languagePack["increaseIndentChar"];
 	var printFunction:string = "";
 	if (bAlternativePrint)
 	{
-		printFunction = (data as any)[languageId]["alternativeFunction"];
+		printFunction = languagePack["alternativeFunction"];
 	}
 	if (!printFunction)
 	{
-		printFunction = (data as any)[languageId]["function"];
+		printFunction = languagePack["function"];
 	}
 
 	const lineNumber = editor.selection.end.line;
@@ -127,24 +170,28 @@ function AddPrintStatement(textToPrint:string, languageId:string, bAlternativePr
 }
 
 
-function main(bAlternativePrint:boolean = false)
+function main(LanguageSettings:any, bAlternativePrint:boolean = false)
 {
 	// Check if the language is supported
 	const editor = vscode.window.activeTextEditor;5
 	if(!editor)
 		return;
+
+	
 	const languageId = editor.document.languageId;
-	if (!data.hasOwnProperty(languageId))
+	if (!LanguageSettings.hasOwnProperty(languageId))
 	{
 		vscode.window.showErrorMessage(`QuickPrint does currently not support the laungage "${editor.document.languageId}."\nYou can manually add support for it by running the command: "QuickPrint Edit Languages"`);
 		return;
 	}
 
+	const languagePack = LanguageSettings[languageId];
+
 	// Use selection
 	var selectedText = GetSelectedText();
 	if (selectedText)
 	{
-		AddPrintStatement(selectedText, languageId, bAlternativePrint);
+		AddPrintStatement(languagePack, selectedText, bAlternativePrint);
 		return;
 	}
 
@@ -152,7 +199,7 @@ function main(bAlternativePrint:boolean = false)
 	vscode.env.clipboard.readText().then((copiedText)=>{
 		if (copiedText)
 		{
-			AddPrintStatement(copiedText, languageId, bAlternativePrint);
+			AddPrintStatement(languagePack, copiedText, bAlternativePrint);
 		}
 	});
 }
