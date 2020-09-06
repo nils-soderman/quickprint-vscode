@@ -3,6 +3,10 @@ import { env } from 'process';
 import { existsSync } from 'fs';
 import { platform } from 'os';
 
+// This needs to be imported just to be included in the build, look into if there's a better way of doing this.
+import * as Data from './languages.json';
+
+
 export function activate(context: vscode.ExtensionContext) {
 
 	let disposablePrint = vscode.commands.registerCommand('quickprint.print', () => {
@@ -154,7 +158,7 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 			}
 			else
 			{
-				var tabSize = editor.options.tabSize;
+				const tabSize = editor.options.tabSize;
 				if (tabSize != "auto" || !tabSize)
 				{
 					extraIndentantions = " ".repeat((tabSize as number));
