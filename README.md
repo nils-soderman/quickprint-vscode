@@ -2,7 +2,7 @@
 
 A shortcut for quickly adding print statements to your code.
 
-![Demo](https://nilssoderman.com/resources/images/gifs/quick-selection-demo.gif)
+![Demo](https://github.com/nils-soderman/quickprint-vscode/blob/master/media/demo.gif?raw=true)
 
 Simply select what you want to debug, press the assigned hotkey and the print statement will be added on the next line.
 
