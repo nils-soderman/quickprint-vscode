@@ -3,9 +3,6 @@ import { env } from 'process';
 import { existsSync } from 'fs';
 import { platform } from 'os';
 
-// This needs to be imported just to be included in the build, look into if there's a better way of doing this.
-import * as Data from './languages.json';
-
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -59,7 +56,7 @@ async function GetLanguageSettingsFilepath()
 	// Ensure the file exists
 	if (!existsSync(settingsFilepath)) {
 		// If the file does not exist, create the file using languages.json as a template.
-		const templateFilepath = __dirname + "/languages.json";
+		const templateFilepath = __dirname + "/../language_support.json";
 		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
 		if (!existsSync(settingsFilepath)) {
 			return templateFilepath;
