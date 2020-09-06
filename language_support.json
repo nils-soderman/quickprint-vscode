@@ -19,7 +19,8 @@
         "function" : "print_r('$(TEXT): ' . $(VAR));",
         "alternativeFunction" : "var_dump($(VAR));",
         "increaseIndentChar": "{",
-        "commentChar": "//"
+        "commentChar": "//",
+        "variablePrefix": "$"
     },
     "python" : {
         "function" : "print(\"$(TEXT): %s\" %($(VAR)))",

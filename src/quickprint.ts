@@ -90,6 +90,7 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 	// Load language pack variables
 	const commentChar:string = languagePack["commentChar"];
 	const increaseIndentChar:string = languagePack["increaseIndentChar"];
+	const variablePrefix:string = languagePack["variablePrefix"];
 	var printFunction:string = "";
 	if (bAlternativePrint)
 	{
@@ -100,18 +101,29 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 		printFunction = languagePack["function"];
 	}
 
-	// Remove any quotation marks from the string that'll replace $(TEXT)
-	var safeString = textToPrint.replace(/\"/g, "");
-	safeString = safeString.replace(/'/g, "");
-
-	// Format the print function
-	printFunction = printFunction.replace("$(TEXT)", safeString);
-	printFunction = printFunction.replace("$(VAR)", textToPrint);
-
 	const selectedLineNumber = editor.selection.end.line;
 	const activeLine = editor.document.lineAt(selectedLineNumber);
 	var activeLineText = activeLine.text;
 	var lineToInsertPrint = selectedLineNumber;
+
+	// Remove any quotation marks from the string that'll replace $(TEXT)
+	var safeString = textToPrint.replace(/\"/g, "");
+	safeString = safeString.replace(/'/g, "");
+
+	// Check if variable prefix should be included
+	if (variablePrefix)
+	{
+		const preText = activeLineText.split(textToPrint)[0];
+		const lastChar = preText.trim().substr(preText.length - 1);
+		if (lastChar == variablePrefix)
+		{
+			textToPrint = variablePrefix + textToPrint;
+		}
+	}
+
+	// Format the print function
+	printFunction = printFunction.replace("$(TEXT)", safeString);
+	printFunction = printFunction.replace("$(VAR)", textToPrint);
 
 	// If we're using text selection, correct indentation & line number needs to be figured out
 	// Otherwise if the text comes from the clipboard, just insert the print statement at the line where the cursor is.
