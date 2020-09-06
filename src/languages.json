@@ -1,4 +1,9 @@
 {
+    "csharp" : {
+        "function" : "Console.WriteLine(\"$(TEXT): \" + $(VAR));",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    },
     "java" : {
         "function" : "System.out.println(\"$(TEXT): \" + $(VAR));",
         "increaseIndentChar": "{",
@@ -11,14 +16,14 @@
         "commentChar": "//"
     },
     "php" : {
-        "function" : "print_r(\"$(TEXT): \" . $(VAR));",
+        "function" : "print_r('$(TEXT): ' . $(VAR));",
         "alternativeFunction" : "var_dump($(VAR));",
         "increaseIndentChar": "{",
         "commentChar": "//"
     },
     "python" : {
         "function" : "print(\"$(TEXT): %s\" %($(VAR)))",
-        "alternativeFunction" : "pprint($(VAR))",
+        "alternativeFunction" : "help($(VAR))",
         "increaseIndentChar": ":",
         "commentChar": "#"
     },
