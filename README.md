@@ -58,5 +58,3 @@ Example of what a language pack might look like:
 * **commentChar** - The character that's used for single line comments.
 
 * **variablePrefix** - _(Optional)_ e.g. PHP has $ as a prefix for every variable. If the language you're working with has something similar add that character here and QuickPrint will be more convenient to use.
-
-A restart of VSCode will be required for the changes you've made to take effect.

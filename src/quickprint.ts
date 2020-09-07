@@ -6,6 +6,8 @@ import { platform } from 'os';
 
 export function activate(context: vscode.ExtensionContext) {
 
+	var bSaveEventListenerExists = false;
+
 	let disposablePrint = vscode.commands.registerCommand('quickprint.print', () => {
 		GetLanguageSettingsFilepath().then( SettingsFilepath => {
 			import(SettingsFilepath).then( LanguageSettings => {
@@ -25,7 +27,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposableEditLang = vscode.commands.registerCommand('quickprint.editLanguages', () => {
 		GetLanguageSettingsFilepath().then( SettingsFilepath => {
 			vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
-				vscode.window.showTextDocument(doc);
+				vscode.window.showTextDocument(doc).then( editor => {
+					if (!bSaveEventListenerExists)
+					{
+						vscode.workspace.onDidSaveTextDocument(OnDocumentSaved, null, context.subscriptions);
+						bSaveEventListenerExists = true;
+					}
+				});
 			});
 		});
 	});
@@ -36,6 +44,20 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {}
+
+/**
+ * Event listener to be added when 
+ */
+async function OnDocumentSaved(TextDocument:vscode.TextDocument)
+{
+	// Check if the saved document is the language settings file.
+	const languageSettingsFilepath = await GetLanguageSettingsFilepath();
+	if (TextDocument.fileName.endsWith(languageSettingsFilepath.replace(/^.*[\\\/]/, '')))
+	{
+		// Clear the cache
+		delete require.cache[require.resolve(languageSettingsFilepath)];
+	}
+}
 
 /**
  * Get the filepath to the language settings file that's stored under AppData
