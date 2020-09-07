@@ -1,4 +1,10 @@
 {
+    "angelscript" : {
+        "function" : "Print(\"$(TEXT): \" + $(VAR), 0.f);",
+        "alternativeFunction" : "PrintToScreenScaled(\"$(TEXT): \" + $(VAR), 0.f, Scale = 3.f);",
+        "increaseIndentChar": "{",
+        "commentChar": "//"
+    },
     "csharp" : {
         "function" : "Console.WriteLine(\"$(TEXT): \" + $(VAR));",
         "increaseIndentChar": "{",

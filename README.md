@@ -19,6 +19,7 @@ Alternitavly you can also copy what you want to print, go to another line in you
 # Language support:
 
 ## **Official Language support:**
+* AngelScript _(Unreal Engine)_
 * C#
 * Java
 * Javascript
