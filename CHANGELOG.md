@@ -1,8 +1,11 @@
 # Change Log
 
 ## 1.0.0
-- Official relase.
+- Official release
 - `<selection>` & `<\selection>` can now be used when formatting the print function to determine cursor position/selection after adding a print statement.
+- Renamed commands: 
+  - "Quick Print" -> "QuickPrint"
+  - "Quick Print Edit Languages" -> "QuickPrint Edit Languages"
 
 ***
 
