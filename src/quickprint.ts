@@ -144,8 +144,10 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 	}
 
 	// Format the print function
+	const bFormatCursorSelection = printFunction.includes("<selection>");
 	printFunction = printFunction.replace("$(TEXT)", safeString);
 	printFunction = printFunction.replace("$(VAR)", textToPrint);
+
 
 	// If we're using text selection, correct indentation & line number needs to be figured out
 	// Otherwise if the text comes from the clipboard, just insert the print statement at the line where the cursor is.
@@ -202,10 +204,45 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 		// Add a new line character + the current indentation to the print function
 		printFunction = "\n" + activeLineText.substring(0, currentIndentation) + printFunction;
 	}
+
+	var startCharPos:number;
+	var endCharPos:number;
+	// Cursor support
+	if (bFormatCursorSelection)
+	{
+		startCharPos = printFunction.indexOf("<selection>");
+		printFunction = printFunction.replace("<selection>", "");
+		
+		if (printFunction.includes("</selection>"))
+		{
+			endCharPos = printFunction.indexOf("</selection>");
+			printFunction = printFunction.replace("</selection>", "");
+		}
+		else
+		{
+			endCharPos = startCharPos;
+		}
+	}
+
 	
 	// Insert the print function into the text document
 	editor.edit(edit => {
 		edit.insert(new vscode.Position(lineToInsertPrint, activeLine.range.end.character), printFunction);
+	}).then(function(){
+		if (bFormatCursorSelection)
+		{
+			var selectionLine = lineToInsertPrint;
+			if (!bUsingClipboardText)
+			{
+				selectionLine++;
+				startCharPos--;
+				endCharPos--;
+			}
+				
+			const startPosition = new vscode.Position(selectionLine, startCharPos);
+			const endPosition = new vscode.Position(selectionLine, endCharPos);
+			editor.selection =  new vscode.Selection(startPosition, endPosition);
+		}
 	});
 
 }

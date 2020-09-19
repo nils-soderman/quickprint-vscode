@@ -16,6 +16,7 @@ Alternitavly you can also copy what you want to print, go to another line in you
 
 <br/>
 
+
 # Language support:
 
 ## **Official Language support:**
@@ -48,8 +49,10 @@ Example of what a language pack might look like:
 <br/>
 
 * **function** - The main function you want to be added when the command QuickPrint is executed.
-    * To insert the selection into the string you can use $(VAR)
-    * You can also use $(TEXT) to insert the selection as a safe string that can be used as a prefix in the print statement.
+    * **Variables you can use to format the string:**
+    * **$(VAR)** - The raw selection from your workspace/clipboard.
+    * **$(TEXT)** - The selection from your workspace/clipboard but as a safe string, e.g. not containing any " characters.
+    * **\<selection\>** & **\<\selection\>** - Can be used to determain the cursor position/selection after a print statement has been added. To only set the cursor position only \<selection\> can be used, if you want to select a range use <\selection\> to mark the end position of the selection.
 
 * **alternativeFunction** - _(Optional)_ If there's an alternative way you like to sometimes print variables you can add that function here.
 

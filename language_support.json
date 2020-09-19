@@ -1,7 +1,7 @@
 {
     "angelscript" : {
-        "function" : "Print(\"$(TEXT): \" + $(VAR), 0.f);",
-        "alternativeFunction" : "PrintToScreenScaled(\"$(TEXT): \" + $(VAR), 0.f, Scale = 3.f);",
+        "function" : "Print(\"$(TEXT): \" + $(VAR), <selection>0</selection>.f);",
+        "alternativeFunction" : "PrintToScreenScaled(\"$(TEXT): \" + $(VAR), <selection>0</selection>.f, Scale = 3.f);",
         "increaseIndentChar": "{",
         "commentChar": "//"
     },
