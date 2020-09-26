@@ -236,7 +236,7 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 	editor.edit(edit => {
 		var charInsertPos:number = activeLine.range.end.character;
 		if (bUsingClipboardText)
-		charInsertPos = editor.selection.start.character;
+			charInsertPos = editor.selection.start.character;
 		edit.insert(new vscode.Position(lineToInsertPrint, charInsertPos), printFunction);
 	}).then(function(){
 		if (bFormatCursorSelection)
