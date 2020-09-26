@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.0.1
+- Clipboard text is now always pasted at the cursor position instead of at the end of the line
+- Fixed `<selection>` selecting the wrong characters if the clipboard text was used
+
 ## 1.0.0
 - Official release
 - `<selection>` & `<\selection>` can now be used when formatting the print function to determine cursor position/selection after adding a print statement.

@@ -2,7 +2,7 @@
 	"name": "quickprint",
 	"displayName": "QuickPrint",
 	"description": "Shorcut for adding print statements to your code.",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"publisher": "NilsSoderman",
 	"qna":"marketplace",
 	"icon":"media/icon.png",

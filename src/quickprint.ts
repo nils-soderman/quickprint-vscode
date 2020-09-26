@@ -222,12 +222,22 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 		{
 			endCharPos = startCharPos;
 		}
+
+		if (bUsingClipboardText)
+		{
+			startCharPos += editor.selection.start.character;
+			endCharPos += editor.selection.start.character;
+		}
+			
 	}
 
 	
 	// Insert the print function into the text document
 	editor.edit(edit => {
-		edit.insert(new vscode.Position(lineToInsertPrint, activeLine.range.end.character), printFunction);
+		var charInsertPos:number = activeLine.range.end.character;
+		if (bUsingClipboardText)
+		charInsertPos = editor.selection.start.character;
+		edit.insert(new vscode.Position(lineToInsertPrint, charInsertPos), printFunction);
 	}).then(function(){
 		if (bFormatCursorSelection)
 		{
