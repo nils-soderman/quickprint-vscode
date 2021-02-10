@@ -36,15 +36,18 @@
 		"commands": [
 			{
 				"command": "quickprint.print",
-				"title": "QuickPrint"
+				"title": "Add print statement",
+				"category": "QuickPrint"
 			},
 			{
 				"command": "quickprint.printAlternative",
-				"title": "QuickPrint Alternative"
+				"title": "Add alternative print statement",
+				"category": "QuickPrint"
 			},
 			{
 				"command": "quickprint.editLanguages",
-				"title": "QuickPrint Edit Languages"
+				"title": "Edit Languages",
+				"category": "QuickPrint"
 			}
 			
 		],
