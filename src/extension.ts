@@ -1,59 +1,72 @@
 import * as vscode from 'vscode';
+
 import { env } from 'process';
-import { existsSync } from 'fs';
 import { platform } from 'os';
 
+import * as fs from 'fs';
+
+
+let _extensionDir = "";
 
 export function activate(context: vscode.ExtensionContext) {
+	_extensionDir = context.extensionPath;
 
 	let bSaveEventListenerExists = false;
 
-	let disposablePrint = vscode.commands.registerCommand('quickprint.print', () => {
-		GetLanguageSettingsFilepath().then( SettingsFilepath => {
-			import(SettingsFilepath).then( LanguageSettings => {
-				QuickPrint(LanguageSettings);
-			});
-		});
-	});
-	
-	let disposablePrintSpecial = vscode.commands.registerCommand('quickprint.printAlternative', () => {
-		GetLanguageSettingsFilepath().then( SettingsFilepath => {
-			import(SettingsFilepath).then( LanguageSettings => {
-				QuickPrint(LanguageSettings, true);
-			});
-		});
-	});
+	context.subscriptions.push(
+		vscode.commands.registerCommand('quickprint.print', async () => {
+			const LanguageSettings = await GetLanguageSettings();
+			QuickPrint(LanguageSettings);
+		})
+	);
 
-	let disposableEditLang = vscode.commands.registerCommand('quickprint.editLanguages', () => {
-		GetLanguageSettingsFilepath().then( SettingsFilepath => {
-			vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
-				vscode.window.showTextDocument(doc).then( editor => {
-					if (!bSaveEventListenerExists)
-					{
-						vscode.workspace.onDidSaveTextDocument(OnDocumentSaved, null, context.subscriptions);
-						bSaveEventListenerExists = true;
-					}
+	context.subscriptions.push(
+		vscode.commands.registerCommand('quickprint.printAlternative', async () => {
+			const LanguageSettings = await GetLanguageSettings();
+			QuickPrint(LanguageSettings, true);
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('quickprint.editLanguages', () => {
+			GetLanguageSettingsFilepath().then(SettingsFilepath => {
+				vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
+					vscode.window.showTextDocument(doc).then(editor => {
+						if (!bSaveEventListenerExists) {
+							vscode.workspace.onDidSaveTextDocument(OnDocumentSaved, null, context.subscriptions);
+							bSaveEventListenerExists = true;
+						}
+					});
 				});
 			});
-		});
-	});
+		})
+	);
 
-	context.subscriptions.push(disposablePrint);
-	context.subscriptions.push(disposablePrintSpecial);
-	context.subscriptions.push(disposableEditLang);
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 /**
  * Event listener to be added when 
  */
-async function OnDocumentSaved(TextDocument:vscode.TextDocument) {
+async function OnDocumentSaved(TextDocument: vscode.TextDocument) {
 	// Check if the saved document is the language settings file.
 	const languageSettingsFilepath = await GetLanguageSettingsFilepath();
 	if (TextDocument.fileName.endsWith(languageSettingsFilepath.replace(/^.*[\\\/]/, ''))) {
 		// Clear the cache
 		delete require.cache[require.resolve(languageSettingsFilepath)];
+	}
+}
+
+async function GetLanguageSettings() {
+	const filepath = await GetLanguageSettingsFilepath();
+	const languageSettings = fs.readFileSync(filepath, 'utf8');
+	try {
+		return JSON.parse(languageSettings);
+	}
+	catch (e) {
+		vscode.window.showErrorMessage(`QuickPrint failed to parse the language settings file.\nPlease make sure the file is valid JSON.`);
+		return null;
 	}
 }
 
@@ -63,24 +76,24 @@ async function OnDocumentSaved(TextDocument:vscode.TextDocument) {
 async function GetLanguageSettingsFilepath() {
 	// Get the path to the settings file
 	const settingsFilename = "quickprint_languages.json";
-	let settingsFilepath:string;
+	let settingsFilepath: string;
 	if (platform() === "win32") {
 		settingsFilepath = env.APPDATA + '/Code/User/' + settingsFilename;
-	}	
+	}
 	else if (platform() === "darwin") {
 		settingsFilepath = env.HOME + "/Library/Application Support/Code/User/" + settingsFilename;
-	}	
+	}
 	else {
 		settingsFilepath = env.HOME + "/.config/Code/User/" + settingsFilename;
 	}
-		
-		
+
+
 	// Ensure the file exists
-	if (!existsSync(settingsFilepath)) {
+	if (!fs.existsSync(settingsFilepath)) {
 		// If the file does not exist, create the file using languages.json as a template.
-		const templateFilepath = __dirname + "/../language_support.json";
+		const templateFilepath = _extensionDir + "/language_support.json";
 		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
-		if (!existsSync(settingsFilepath)) {
+		if (!fs.existsSync(settingsFilepath)) {
 			return templateFilepath;
 		}
 	}
@@ -91,7 +104,7 @@ async function GetLanguageSettingsFilepath() {
 /**
  * Get the raw trimmed code line without any comments, e.g. "def MyFun(): #HELLO" would return "def MyFun():"
  */
-function GetLineWithoutComments(line:string, commentChar:string) : string {
+function GetLineWithoutComments(line: string, commentChar: string): string {
 	if (line.includes(commentChar)) {
 		line = line.split(commentChar)[0];
 	}
@@ -101,19 +114,19 @@ function GetLineWithoutComments(line:string, commentChar:string) : string {
 /**
  * Adds a print statement on the next line in the text editor
  */
-function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePrint:boolean, bUsingClipboardText:boolean) {
+function AddPrintStatement(languagePack: any, textToPrint: string, bAlternativePrint: boolean, bUsingClipboardText: boolean) {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor) {
-		return  "";
+		return "";
 	}
-	
+
 	textToPrint = textToPrint.trim();
 
 	// Load language pack variables
-	const commentChar:string = languagePack["commentChar"];
-	const increaseIndentChar:string = languagePack["increaseIndentChar"];
-	const variablePrefix:string = languagePack["variablePrefix"];
-	let printFunction:string = "";
+	const commentChar: string = languagePack["commentChar"];
+	const increaseIndentChar: string = languagePack["increaseIndentChar"];
+	const variablePrefix: string = languagePack["variablePrefix"];
+	let printFunction: string = "";
 	if (bAlternativePrint) {
 		printFunction = languagePack["alternativeFunction"];
 	}
@@ -157,7 +170,7 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 				activeLineText = lineText;
 			}
 		}
-		
+
 		// Figure out the correct indentation
 		let currentIndentation = activeLineText.length - activeLineText.trimLeft().length;
 
@@ -195,13 +208,13 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 		printFunction = "\n" + activeLineText.substring(0, currentIndentation) + printFunction;
 	}
 
-	let startCharPos:number;
-	let endCharPos:number;
+	let startCharPos: number;
+	let endCharPos: number;
 	// Cursor support
 	if (bFormatCursorSelection) {
 		startCharPos = printFunction.indexOf("<selection>");
 		printFunction = printFunction.replace("<selection>", "");
-		
+
 		if (printFunction.includes("</selection>")) {
 			endCharPos = printFunction.indexOf("</selection>");
 			printFunction = printFunction.replace("</selection>", "");
@@ -214,18 +227,18 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 			startCharPos += editor.selection.start.character;
 			endCharPos += editor.selection.start.character;
 		}
-			
+
 	}
 
-	
+
 	// Insert the print function into the text document
 	editor.edit(edit => {
-		let charInsertPos:number = activeLine.range.end.character;
+		let charInsertPos: number = activeLine.range.end.character;
 		if (bUsingClipboardText) {
 			charInsertPos = editor.selection.start.character;
 		}
 		edit.insert(new vscode.Position(lineToInsertPrint, charInsertPos), printFunction);
-	}).then(function() {
+	}).then(function () {
 		if (bFormatCursorSelection) {
 			let selectionLine = lineToInsertPrint;
 			if (!bUsingClipboardText) {
@@ -233,10 +246,10 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 				startCharPos--;
 				endCharPos--;
 			}
-				
+
 			const startPosition = new vscode.Position(selectionLine, startCharPos);
 			const endPosition = new vscode.Position(selectionLine, endCharPos);
-			editor.selection =  new vscode.Selection(startPosition, endPosition);
+			editor.selection = new vscode.Selection(startPosition, endPosition);
 		}
 	});
 
@@ -245,9 +258,9 @@ function AddPrintStatement(languagePack:any, textToPrint:string, bAlternativePri
 /**
  * Main function to be called upon when a command runs and a print statement is supposed to be added.
  */
-function QuickPrint(LanguageSettings:any, bAlternativePrint:boolean = false) {
+function QuickPrint(LanguageSettings: any, bAlternativePrint: boolean = false) {
 	const editor = vscode.window.activeTextEditor;
-	if(!editor) {
+	if (!editor) {
 		return;
 	}
 
@@ -268,7 +281,7 @@ function QuickPrint(LanguageSettings:any, bAlternativePrint:boolean = false) {
 	}
 
 	// If no text was selected try to get the copied text from the clipboard instead
-	vscode.env.clipboard.readText().then( copiedText => {
+	vscode.env.clipboard.readText().then(copiedText => {
 		if (copiedText) {
 			AddPrintStatement(languagePack, copiedText, bAlternativePrint, true);
 		}

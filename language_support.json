@@ -29,7 +29,7 @@
         "variablePrefix": "$"
     },
     "python" : {
-        "function" : "print(f\"$(VAR): \")",
+        "function" : "print(f\"{$(VAR)} = \")",
         "alternativeFunction" : "print($(VAR))",
         "increaseIndentChar": ":",
         "commentChar": "#"
