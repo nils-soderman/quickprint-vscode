@@ -29,8 +29,8 @@
         "variablePrefix": "$"
     },
     "python" : {
-        "function" : "print(\"$(TEXT): %s\" %($(VAR)))",
-        "alternativeFunction" : "help($(VAR))",
+        "function" : "print(f\"$(VAR): \")",
+        "alternativeFunction" : "print($(VAR))",
         "increaseIndentChar": ":",
         "commentChar": "#"
     },
