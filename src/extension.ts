@@ -7,11 +7,14 @@ import * as fs from 'fs';
 
 
 let _extensionDir = "";
+let cachedLanguageSettings: any = null;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	_extensionDir = context.extensionPath;
 
 	let bSaveEventListenerExists = false;
+	
+	await EnsureLanguageSettingsFilepath();
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('quickprint.print', async () => {
@@ -29,16 +32,15 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('quickprint.editLanguages', () => {
-			GetLanguageSettingsFilepath().then(SettingsFilepath => {
-				vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
-					vscode.window.showTextDocument(doc).then(editor => {
-						if (!bSaveEventListenerExists) {
-							vscode.workspace.onDidSaveTextDocument(OnDocumentSaved, null, context.subscriptions);
-							bSaveEventListenerExists = true;
-						}
+			const SettingsFilepath = GetLanguageSettingsFilepath();
+			vscode.workspace.openTextDocument(SettingsFilepath).then(doc => {
+				vscode.window.showTextDocument(doc).then(editor => {
+					if (!bSaveEventListenerExists) {
+						vscode.workspace.onDidSaveTextDocument(OnDocumentSaved, null, context.subscriptions);
+						bSaveEventListenerExists = true;
+					}
 					});
 				});
-			});
 		})
 	);
 
@@ -46,23 +48,29 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() { }
 
+
 /**
  * Event listener to be added when 
  */
-async function OnDocumentSaved(TextDocument: vscode.TextDocument) {
+function OnDocumentSaved(TextDocument: vscode.TextDocument) {
 	// Check if the saved document is the language settings file.
-	const languageSettingsFilepath = await GetLanguageSettingsFilepath();
+	const languageSettingsFilepath = GetLanguageSettingsFilepath();
 	if (TextDocument.fileName.endsWith(languageSettingsFilepath.replace(/^.*[\\\/]/, ''))) {
 		// Clear the cache
-		delete require.cache[require.resolve(languageSettingsFilepath)];
+		cachedLanguageSettings = null;
 	}
 }
 
 async function GetLanguageSettings() {
-	const filepath = await GetLanguageSettingsFilepath();
+	if (cachedLanguageSettings !== null) {
+		return cachedLanguageSettings;
+	}
+
+	const filepath = GetLanguageSettingsFilepath();
 	const languageSettings = fs.readFileSync(filepath, 'utf8');
 	try {
-		return JSON.parse(languageSettings);
+		cachedLanguageSettings = JSON.parse(languageSettings);
+		return cachedLanguageSettings;
 	}
 	catch (e) {
 		vscode.window.showErrorMessage(`QuickPrint failed to parse the language settings file.\nPlease make sure the file is valid JSON.`);
@@ -70,10 +78,24 @@ async function GetLanguageSettings() {
 	}
 }
 
+
+async function EnsureLanguageSettingsFilepath() {
+	const settingsFilepath = GetLanguageSettingsFilepath();
+	// Ensure the file exists
+	if (!fs.existsSync(settingsFilepath)) {
+		// If the file does not exist, create the file using languages.json as a template.
+		const templateFilepath = _extensionDir + "/language_support.json";
+		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
+		if (!fs.existsSync(settingsFilepath)) {
+			return templateFilepath;
+		}
+	}
+}
+
 /**
  * Get the filepath to the language settings file that's stored under AppData
  */
-async function GetLanguageSettingsFilepath() {
+function GetLanguageSettingsFilepath() {
 	// Get the path to the settings file
 	const settingsFilename = "quickprint_languages.json";
 	let settingsFilepath: string;
@@ -85,17 +107,6 @@ async function GetLanguageSettingsFilepath() {
 	}
 	else {
 		settingsFilepath = env.HOME + "/.config/Code/User/" + settingsFilename;
-	}
-
-
-	// Ensure the file exists
-	if (!fs.existsSync(settingsFilepath)) {
-		// If the file does not exist, create the file using languages.json as a template.
-		const templateFilepath = _extensionDir + "/language_support.json";
-		await vscode.workspace.fs.copy(vscode.Uri.file(templateFilepath), vscode.Uri.file(settingsFilepath));
-		if (!fs.existsSync(settingsFilepath)) {
-			return templateFilepath;
-		}
 	}
 
 	return settingsFilepath;
