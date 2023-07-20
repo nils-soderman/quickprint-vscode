@@ -11,7 +11,7 @@
 		"url": "https://nilssoderman.com"
 	},
 	"engines": {
-		"vscode": "^1.48.0"
+		"vscode": "^1.75.0"
 	},
 	"keywords": [
 		"print",
@@ -25,11 +25,6 @@
 		"Keymaps",
 		"Debuggers",
 		"Other"
-	],
-	"activationEvents": [
-		"onCommand:quickprint.print",
-		"onCommand:quickprint.printAlternative",
-		"onCommand:quickprint.editLanguages"
 	],
 	"main": "./out/quickprint.js",
 	"contributes": {
