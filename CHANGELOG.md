@@ -2,6 +2,7 @@
 
 ## [1.0.3] - 2023-07-20
 - Default python print now uses f-strings
+- Use esbuild to build & minify the extension
 
 
 ## [1.0.2]
