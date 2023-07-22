@@ -10,3 +10,6 @@ vsc-extension-quickstart.md
 **/*.ts
 **/*.psd
 **/*.gif
+
+node_modules/
+!**/[lL][iI][cC][eE][nN][sS][eE]*
